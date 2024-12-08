@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import User
+from .managers import PostManager
 
 
 class Post(models.Model):
@@ -27,6 +28,8 @@ class Post(models.Model):
         related_name='posts',
         verbose_name='Теги'
     )
+
+    objects = PostManager()
 
     def __str__(self):
         return self.title
