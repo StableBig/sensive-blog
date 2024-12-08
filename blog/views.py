@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db.models import Count
 from blog.models import Comment, Post, Tag
 
 
@@ -11,32 +12,48 @@ def serialize_post(post):
         'title': post.title,
         'teaser_text': post.text[:200],
         'author': post.author.username,
-        'comments_amount': len(Comment.objects.filter(post=post)),
+        'comments_amount': Comment.objects.filter(post=post).count(),
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
         'tags': [serialize_tag(tag) for tag in post.tags.all()],
-        'first_tag_title': post.tags.all()[0].title,
+        'first_tag_title': post.tags.first().title if post.tags.exists() else None,
+        'likes_amount': post.likes_count,
     }
+
 
 
 def serialize_tag(tag):
+    posts_with_tag = getattr(tag, 'posts_with_tag', None)
     return {
         'title': tag.title,
-        'posts_with_tag': len(Post.objects.filter(tags=tag)),
+        'posts_with_tag': posts_with_tag if posts_with_tag is not None else tag.posts.count(),
     }
 
 
+
 def index(request):
-    posts = Post.objects.all()
-    most_popular_posts = sorted(posts, key=lambda post: post.likes.count(), reverse=True)[:5]
+    most_popular_posts = (
+        Post.objects
+        .annotate(likes_count=Count('likes'))
+        .order_by('-likes_count')
+        .select_related('author')
+        .prefetch_related('tags', 'likes')
+    )[:5]
 
-    fresh_posts = Post.objects.order_by('published_at')
-    most_fresh_posts = list(fresh_posts)[-5:]
+    most_fresh_posts = (
+        Post.objects
+        .annotate(likes_count=Count('likes'))
+        .order_by('-published_at')
+        .select_related('author')
+        .prefetch_related('tags')
+    )[:5]
 
-    tags = Tag.objects.all()
-    popular_tags = sorted(tags, key=get_related_posts_count)
-    most_popular_tags = popular_tags[-5:]
+    most_popular_tags = (
+        Tag.objects
+        .annotate(posts_with_tag=Count('posts'))
+        .order_by('-posts_with_tag')
+    )[:5]
 
     context = {
         'most_popular_posts': [serialize_post(post) for post in most_popular_posts],
