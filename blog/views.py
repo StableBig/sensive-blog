@@ -3,10 +3,6 @@ from django.db.models import Count
 from blog.models import Comment, Post, Tag
 
 
-def get_related_posts_count(tag):
-    return tag.posts.count()
-
-
 def serialize_post(post):
     return {
         'title': post.title,
@@ -23,10 +19,9 @@ def serialize_post(post):
 
 
 def serialize_tag(tag):
-    posts_with_tag = getattr(tag, 'posts_with_tag', None)
     return {
         'title': tag.title,
-        'posts_with_tag': posts_with_tag if posts_with_tag is not None else tag.posts.count(),
+        'posts_with_tag': tag.posts_with_tag if hasattr(tag, 'posts_with_tag') else 0,
     }
 
 
