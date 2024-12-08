@@ -4,7 +4,7 @@ from blog.models import Comment, Post, Tag
 
 
 def serialize_post(post):
-    """Оригинальная функция, используем для post_detail и tag_filter"""
+    """Оригинальная версия для страниц post_detail и tag_filter"""
     return {
         'title': post.title,
         'teaser_text': post.text[:200],
@@ -20,18 +20,18 @@ def serialize_post(post):
 
 
 def serialize_post_optimized(post):
-    """Оптимизированная функция для главной страницы (index)"""
+    """Оптимизированная версия для главной страницы (index)"""
     return {
         'title': post.title,
         'teaser_text': post.text[:200],
         'author': post.author.username,
-        'comments_amount': post.comments_count if hasattr(post, 'comments_count') else 0,
+        'comments_amount': post.comments_count,
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
         'tags': [serialize_tag(tag) for tag in post.tags.all()],
         'first_tag_title': post.tags.first().title if post.tags.exists() else None,
-        'likes_amount': post.likes_count if hasattr(post, 'likes_count') else 0,
+        'likes_amount': post.likes_count,
     }
 
 
@@ -45,14 +45,14 @@ def serialize_tag(tag):
 def index(request):
     most_popular_posts = (
         Post.objects
-        .annotate(likes_count=Count('likes'))
+        .annotate(likes_count=Count('likes'), comments_count=Count('comments'))
         .order_by('-likes_count')
         .prefetch_related('author', 'tags')
     )[:5]
 
     most_fresh_posts = (
         Post.objects
-        .annotate(likes_count=Count('likes'))
+        .annotate(likes_count=Count('likes'), comments_count=Count('comments'))
         .order_by('-published_at')
         .prefetch_related('author', 'tags')
     )[:5]
@@ -76,7 +76,7 @@ def post_detail(request, slug):
         Post.objects
         .annotate(
             likes_count=Count('likes'),
-            comments_count=Count('comment')
+            comments_count=Count('comments')
         )
         .prefetch_related('author', 'tags')
         .get(slug=slug)
@@ -134,7 +134,7 @@ def tag_filter(request, tag_title):
 
     related_posts = (
         tag.posts
-        .annotate(likes_count=Count('likes'))
+        .annotate(likes_count=Count('likes'), comments_count=Count('comments'))
         .order_by('-published_at')
         .prefetch_related('author', 'tags')
     )[:20]

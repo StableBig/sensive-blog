@@ -6,30 +6,33 @@ from django.contrib.auth.models import User
 class Post(models.Model):
     title = models.CharField('Заголовок', max_length=200)
     text = models.TextField('Текст')
-    slug = models.SlugField('Название в виде url', max_length=200)
-    image = models.ImageField('Картинка')
+    slug = models.SlugField('Название в виде URL', max_length=200, unique=True)
+    image = models.ImageField('Картинка', blank=True, null=True)
     published_at = models.DateTimeField('Дата и время публикации')
 
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-        limit_choices_to={'is_staff': True})
+        limit_choices_to={'is_staff': True}
+    )
     likes = models.ManyToManyField(
         User,
         related_name='liked_posts',
         verbose_name='Кто лайкнул',
-        blank=True)
+        blank=True
+    )
     tags = models.ManyToManyField(
         'Tag',
         related_name='posts',
-        verbose_name='Теги')
+        verbose_name='Теги'
+    )
 
     def __str__(self):
         return self.title
 
     def get_absolute_url(self):
-        return reverse('post_detail', args={'slug': self.slug})
+        return reverse('post_detail', args=[self.slug])
 
     class Meta:
         ordering = ['-published_at']
@@ -47,7 +50,7 @@ class Tag(models.Model):
         self.title = self.title.lower()
 
     def get_absolute_url(self):
-        return reverse('tag_filter', args={'tag_title': self.slug})
+        return reverse('tag_filter', args=[self.title])
 
     class Meta:
         ordering = ['title']
@@ -59,12 +62,14 @@ class Comment(models.Model):
     post = models.ForeignKey(
         'Post',
         on_delete=models.CASCADE,
-        verbose_name='Пост, к которому написан')
+        verbose_name='Пост, к которому написан',
+        related_name='comments'
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор')
-
+        verbose_name='Автор'
+    )
     text = models.TextField('Текст комментария')
     published_at = models.DateTimeField('Дата и время публикации')
 
