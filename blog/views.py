@@ -38,8 +38,8 @@ def index(request):
     most_fresh_posts = (
         Post.objects
         .order_by('-published_at')
-        .prefetch_related('author', 'tags')[:5]
-    )
+        .prefetch_related('author', 'tags')
+    )[:5]
 
     context = {
         'most_popular_posts': [serialize_post(post) for post in most_popular_posts],
@@ -96,14 +96,13 @@ def tag_filter(request, tag_title):
         tag.posts
         .annotate(likes_count=Count('likes'))
         .order_by('-published_at')
-        .prefetch_related('author', 'tags', 'comments')[:20]
-    )
+        .prefetch_related('author', 'tags', 'comments')
+    )[:20]
 
     most_popular_posts = (
         Post.objects
         .popular()
         .prefetch_related('author', 'tags')
-        .fetch_with_comments_count()[:5]
     )
 
     most_popular_tags = Tag.objects.popular()[:5]
