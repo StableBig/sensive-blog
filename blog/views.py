@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.db.models import Count
 from blog.models import Post, Tag
 
@@ -50,11 +50,11 @@ def index(request):
 
 
 def post_detail(request, slug):
-    post = (
+    post = get_object_or_404(
         Post.objects
         .annotate(likes_count=Count('likes'))
-        .prefetch_related('author', 'tags', 'comments')
-        .get(slug=slug)
+        .prefetch_related('author', 'tags', 'comments'),
+        slug=slug
     )
 
     comments = (
@@ -90,7 +90,7 @@ def post_detail(request, slug):
 
 
 def tag_filter(request, tag_title):
-    tag = Tag.objects.get(title=tag_title)
+    tag = get_object_or_404(Tag, title=tag_title)
 
     related_posts = (
         tag.posts
